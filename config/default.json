@@ -1,0 +1,11 @@
+{
+  "instagram": {
+    "client": {
+      "id": "9bc6fe9112e245f8a80b7d4e22de17fe",
+      "secret": "e5d4874e8b5d497fbea7f1aac36e3e72"
+    },
+    "urls": {
+      "oauth": "https://api.instagram.com/oauth/authorize/"
+    }
+  }
+}
