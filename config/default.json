@@ -5,7 +5,8 @@
       "secret": "e5d4874e8b5d497fbea7f1aac36e3e72"
     },
     "urls": {
-      "oauth": "https://api.instagram.com/oauth/authorize/"
+      "authorize": "https://api.instagram.com/oauth/authorize/",
+      "token": "https://api.instagram.com/oauth/access_token"
     }
   }
 }
