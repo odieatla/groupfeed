@@ -4,26 +4,47 @@ var express = require('express');
 var app = express();
 var config = require('config');
 var url = require('url');
-//var request = require('request');
+var request = require('request');
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
 // second and third leg of oauth
-app.get('/auth', (req, res) => {
-  let access_code = req.query.code;
+app.get('/auth', (req, res, next) => {
+  let query = req.query;
+
+  if (query.error && query.error_reason === 'user_denied') {
+    console.error('user denied');
+    res.send('Too bad. User denied.');
+    return next();
+  }
+
+  let access_code = query.code;
 
   request.post({
     url: config.get('instagram.urls.token'),
     form: {
       client_id: config.get('instagram.client.id'),
-      grant_type: authorization_code,
+      client_secret: config.get('instagram.client.secret'),
+      grant_type: 'authorization_code',
       redirect_uri: 'http://54.186.160.181:3000/auth',
       code: access_code
     }
-  }, (err, result, remaining, limit) => {
-    res.send(result.access_token);
+  }, (err, response, body) => {
+    let body_obj = JSON.parse(body);
+
+    // TODO: error handling
+    if (err) {
+      console.error(err);
+    } else if (body && body_obj.access_token) {
+      // TODO: save token to cookie? save user info to db?
+      console.error(body);
+      res.send(body.access_token);
+    } else {
+      console.error(body);
+    }
+
   });
 });
 
