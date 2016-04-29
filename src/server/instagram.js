@@ -47,10 +47,10 @@ var Instagram = function(attrs) {
  * @param redirect_url string the redirected url that registered with Instagram API
  * @return authentication_url string the url a user will use to log in and authorize the app
  */
-Instagram.prototype.get_auth_url = (redirect_url) => {
+Instagram.prototype.get_auth_url = function(redirect_url) {
   let url_obj = url.parse(config.get('instagram.urls.authorize'));
   let qs = {
-    client_id: this.attrs.client_id,
+    client_id: this.attrs.auth.client_id,
     redirect_uri: redirect_url,
     response_type: 'code'
   };
@@ -68,12 +68,12 @@ Instagram.prototype.get_auth_url = (redirect_url) => {
  * @param cb function(err, response, body)
  * @return authentication_url string the url a user will use to log in and authorize the app
  */
-Instagram.prototype.auth_user = (code, redirect_url, cb) => {
+Instagram.prototype.auth_user = function(code, redirect_url, cb) {
   request.post({
     url: config.get('instagram.urls.token'),
     form: {
-      client_id: this.attrs.client_id,
-      client_secret: this.attrs.client_secret,
+      client_id: this.attrs.auth.client_id,
+      client_secret: this.attrs.auth.client_secret,
       grant_type: 'authorization_code',
       redirect_uri: redirect_url,
       code: code
