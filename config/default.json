@@ -6,7 +6,8 @@
     },
     "urls": {
       "authorize": "https://api.instagram.com/oauth/authorize/",
-      "token": "https://api.instagram.com/oauth/access_token"
+      "token": "https://api.instagram.com/oauth/access_token",
+      "redirect": "http://54.186.160.181:3000/auth"
     }
   }
 }

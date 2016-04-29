@@ -29,7 +29,7 @@ app.get('/auth', (req, res, next) => {
 
   let access_code = query.code;
 
-  instagram_api.auth_user(access_code, 'http://54.186.160.181:3000/auth',
+  instagram_api.auth_user(access_code, config.get('instagram.urls.redirect'),
     (err, response, body) => {
       if (err) {
         console.error(err);
@@ -45,7 +45,7 @@ app.get('/auth', (req, res, next) => {
 
 // first leg of oauth
 app.get('/login', (req, res) => {
-  res.redirect(instagram_api.get_auth_url('http://54.186.160.181:3000/auth'));
+  res.redirect(instagram_api.get_auth_url(config.get('instagram.urls.redirect')));
 });
 
 /**
