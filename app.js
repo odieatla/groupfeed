@@ -6,11 +6,6 @@ var config = require('config');
 var passport = require('passport');
 var instagramStrategy = require('passport-instagram').Strategy;
 
-var instagram_api = require('./src/server/instagram').use({
-  client_id: config.get('instagram.client.id'),
-  client_secret: config.get('instagram.client.secret')
-});
-
 // Passport session setup.
 //   To support persistent login sessions, Passport needs to be able to
 //   serialize users into and deserialize users out of the session.  Typically,
@@ -25,7 +20,7 @@ passport.serializeUser(function(user, done) {
 passport.deserializeUser(function(obj, done) {
   done(null, obj);
 /* TODO: finding user by ID when deserializing
-  User.findById(id, function (err, user) {
+  User.findById(obj.id, function (err, user) {
     done(err, user);
   });
 */
@@ -56,49 +51,25 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-
-
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
 // second and third leg of oauth
 app.get('/auth',
-  passport.authenticate('instagram', { failureRedirect: '/login' }),
+  passport.authenticate('instagram', { failureRedirect: '/' }),
   (req, res, next) => {
-
-    console.error(req);
-    console.error(res);
-/*
-  let query = req.query;
-
-  if (query.error && query.error_reason === 'user_denied') {
-    console.error('user denied');
-    res.send('Too bad. User denied.');
-    return next();
-  }
-
-  let access_code = query.code;
-
-  instagram_api.auth_user(access_code, config.get('instagram.urls.redirect'),
-    (err, response, body) => {
-      if (err) {
-        console.error(err);
-      } else if (body && body.access_token) {
-        // TODO: save user info to db?
-        res.send(body.access_token);
-      } else {
-        console.error(body);
-      }
-  });
-*/
+    res.redirect('/');
 });
 
 // first leg of oauth
 app.get('/login',
-  passport.authenticate('instagram'),
+  passport.authenticate('instagram',
+    {
+      failureRedirect: '/',
+      scope: ['comments', 'relationships']
+    }),
   (req, res) => {
-  //res.redirect(instagram_api.get_auth_url(config.get('instagram.urls.redirect')));
    
   });
 
