@@ -13,6 +13,32 @@ var instagram_api = require('./src/server/instagram').use({
   client_secret: config.get('instagram.client.secret')
 });
 
+passport.use(new instagramStrategy({
+    clientID: config.get('instagram.client.id'),
+    clientSecret: config.get('instagram.client.secret'),
+    callbackURL: config.get('instagram.urls.redirect')
+  },
+  function(accessToken, refreshToken, profile, done) {
+    console.error(profile);
+    process.nextTick(function () {
+      
+      // To keep the example simple, the user's Instagram profile is returned to
+      // represent the logged-in user.  In a typical application, you would want
+      // to associate the Instagram account with a user record in your database,
+      // and return that user instead.
+      return done(null, profile);
+    });
+  }
+));
+
+// middlewares
+app.use(require('cookie-parser')());
+app.use(require('body-parser').json());
+app.use(require('express-session')({ secret: 'groupfeed', resave: true, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
+
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
