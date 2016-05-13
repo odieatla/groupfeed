@@ -2,15 +2,28 @@
 
 var express = require('express');
 var app = express();
-//var instagram_api = require('./src/server/instagram');
 var config = require('config');
-//var url = require('url');
-//var request = require('request');
+var passport = require('passport');
+var instagramStrategy = require('passport-instagram').Strategy;
 
+// Passport session setup.
+//   To support persistent login sessions, Passport needs to be able to
+//   serialize users into and deserialize users out of the session.  Typically,
+//   this will be as simple as storing the user ID when serializing, and finding
+//   the user by ID when deserializing.  However, since this example does not
+//   have a database of user records, the complete Instagram profile is
+//   serialized and deserialized.
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
 
-var instagram_api = require('./src/server/instagram').use({
-  client_id: config.get('instagram.client.id'),
-  client_secret: config.get('instagram.client.secret')
+passport.deserializeUser(function(obj, done) {
+  done(null, obj);
+/* TODO: finding user by ID when deserializing
+  User.findById(obj.id, function (err, user) {
+    done(err, user);
+  });
+*/
 });
 
 passport.use(new instagramStrategy({
@@ -44,35 +57,22 @@ app.get('/', (req, res) => {
 });
 
 // second and third leg of oauth
-app.get('/auth', (req, res, next) => {
-  let query = req.query;
-
-  if (query.error && query.error_reason === 'user_denied') {
-    console.error('user denied');
-    res.send('Too bad. User denied.');
-    return next();
-  }
-
-  let access_code = query.code;
-
-  instagram_api.auth_user(access_code, config.get('instagram.urls.redirect'),
-    (err, response, body) => {
-      if (err) {
-        console.error(err);
-      } else if (body && body.access_token) {
-        // TODO: save token to cookie? save user info to db?
-        res.send(body.access_token);
-      } else {
-        console.error(body);
-      }
-  });
-
+app.get('/auth',
+  passport.authenticate('instagram', { failureRedirect: '/' }),
+  (req, res, next) => {
+    res.redirect('/');
 });
 
 // first leg of oauth
-app.get('/login', (req, res) => {
-  res.redirect(instagram_api.get_auth_url(config.get('instagram.urls.redirect')));
-});
+app.get('/login',
+  passport.authenticate('instagram',
+    {
+      failureRedirect: '/',
+      scope: ['comments', 'relationships']
+    }),
+  (req, res) => {
+   
+  });
 
 /**
  * api routes
