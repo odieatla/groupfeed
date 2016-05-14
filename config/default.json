@@ -1,4 +1,7 @@
 {
+  "db": {
+    "uri": "mongodb://localhost/groupfeed"
+  },
   "instagram": {
     "client": {
       "id": "9bc6fe9112e245f8a80b7d4e22de17fe",

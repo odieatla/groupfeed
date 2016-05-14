@@ -6,6 +6,15 @@ var config = require('config');
 var passport = require('passport');
 var instagramStrategy = require('passport-instagram').Strategy;
 
+global.mongoose = require('mongoose');
+mongoose.connect(config.get('db.uri'), (err, res) {
+  if (err) {
+    console.error(`ERROR connecting to ${config.get('db.uri')}`);
+  } else {
+    console.error(`Succeeded connected to ${config.get('db.uri')}`);
+  }
+});
+
 // Passport session setup.
 //   To support persistent login sessions, Passport needs to be able to
 //   serialize users into and deserialize users out of the session.  Typically,
@@ -13,11 +22,11 @@ var instagramStrategy = require('passport-instagram').Strategy;
 //   the user by ID when deserializing.  However, since this example does not
 //   have a database of user records, the complete Instagram profile is
 //   serialized and deserialized.
-passport.serializeUser(function(user, done) {
+passport.serializeUser((user, done) => {
   done(null, user);
 });
 
-passport.deserializeUser(function(obj, done) {
+passport.deserializeUser((obj, done) => {
   done(null, obj);
 /* TODO: finding user by ID when deserializing
   User.findById(obj.id, function (err, user) {
@@ -31,9 +40,9 @@ passport.use(new instagramStrategy({
     clientSecret: config.get('instagram.client.secret'),
     callbackURL: config.get('instagram.urls.redirect')
   },
-  function(accessToken, refreshToken, profile, done) {
-    console.error(profile);
-    process.nextTick(function () {
+  (accessToken, refreshToken, profile, done) => {
+    process.nextTick(() => {
+      console.error(profile);
       
       // To keep the example simple, the user's Instagram profile is returned to
       // represent the logged-in user.  In a typical application, you would want
@@ -79,6 +88,6 @@ app.get('/login',
  */
 //require('./src/server/routes/index');
 
-app.listen(3000, function () {
+app.listen(3000, () => {
   console.log('Example app listening on port 3000');
 });
