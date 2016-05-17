@@ -8,7 +8,7 @@
   "description": "application that allows user to read Instagram feed based on group",
   "main": "app.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec"
+    "test": "NODE_ENV=test ./node_modules/.bin/mocha --recursive --reporter spec"
   },
   "author": "",
   "license": "ISC",
@@ -23,6 +23,7 @@
     "body-parser": "^1.15.1",
     "config": "^1.20.1",
     "cookie-parser": "^1.4.1",
+    "debug": "^2.2.0",
     "express-session": "^1.13.0",
     "gulp": "^3.9.1",
     "gulp-autoprefixer": "^3.1.0",

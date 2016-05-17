@@ -47,7 +47,7 @@ var Instagram = function(attrs) {
  * @param redirect_url string the redirected url that registered with Instagram API
  * @return authentication_url string the url a user will use to log in and authorize the app
  */
-Instagram.prototype.get_auth_url = function(redirect_urli, scope) {
+Instagram.prototype.get_auth_url = function(redirect_url, scope) {
   let url_obj = url.parse(config.get('instagram.urls.authorize'));
   let qs = {
     client_id: this.attrs.auth.client_id,

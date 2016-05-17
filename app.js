@@ -6,14 +6,18 @@ var config = require('config');
 var passport = require('passport');
 var instagramStrategy = require('passport-instagram').Strategy;
 
+var debug = require('debug')('app');
+
 global.mongoose = require('mongoose');
-mongoose.connect(config.get('db.uri'), (err, res) {
+mongoose.connect(config.get('db.uri'), (err) => {
   if (err) {
-    console.error(`ERROR connecting to ${config.get('db.uri')}`);
+    throw err;
   } else {
-    console.error(`Succeeded connected to ${config.get('db.uri')}`);
+    debug(`Succeeded connected to ${config.get('db.uri')}`);
   }
 });
+
+var User = require('./src/models/User');
 
 // Passport session setup.
 //   To support persistent login sessions, Passport needs to be able to
@@ -28,11 +32,6 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser((obj, done) => {
   done(null, obj);
-/* TODO: finding user by ID when deserializing
-  User.findById(obj.id, function (err, user) {
-    done(err, user);
-  });
-*/
 });
 
 passport.use(new instagramStrategy({
@@ -42,8 +41,29 @@ passport.use(new instagramStrategy({
   },
   (accessToken, refreshToken, profile, done) => {
     process.nextTick(() => {
-      console.error(profile);
-      
+      User.find({'instagram_id': profile.id}, (err, results) => {
+        if (err) {
+          throw err;
+        }
+        if (!results.length) {
+          let user = {
+            instagram_id: profile.id,
+            username: profile.username,
+            access_token: accessToken,
+            first_name: profile.name.givenName || '',
+            last_name: profile.name.familyName || ''
+          };
+          User.create(user, (err, result) => {
+            if (err) {
+              throw err;
+            } else {
+              debug(`added user ${profile.username} to db`);
+            }
+          })
+        } else {
+          debug(`found user ${results[0].username}`);
+        }
+      });
       // To keep the example simple, the user's Instagram profile is returned to
       // represent the logged-in user.  In a typical application, you would want
       // to associate the Instagram account with a user record in your database,
@@ -53,23 +73,37 @@ passport.use(new instagramStrategy({
   }
 ));
 
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) { return next(); }
+  res.redirect('/');
+}
+
 // middlewares
 app.use(require('cookie-parser')());
 app.use(require('body-parser').json());
 app.use(require('express-session')({ secret: 'groupfeed', resave: true, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use((err, req, res, next) => {
+  // handle `next(err)` calls
+  debug(`ERROR: ${err.message}`);
+  debug(err);
+});
 
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
+app.get('/user', ensureAuthenticated, (req, res) => {
+  res.send('logged in');
+});
+
 // second and third leg of oauth
 app.get('/auth',
   passport.authenticate('instagram', { failureRedirect: '/' }),
   (req, res, next) => {
-    res.redirect('/');
+    res.redirect('/user');
 });
 
 // first leg of oauth
@@ -79,8 +113,8 @@ app.get('/login',
       failureRedirect: '/',
       scope: ['comments', 'relationships']
     }),
-  (req, res) => {
-   
+  (err, req, res, next) => {
+    return next(err);
   });
 
 /**
@@ -89,5 +123,5 @@ app.get('/login',
 //require('./src/server/routes/index');
 
 app.listen(3000, () => {
-  console.log('Example app listening on port 3000');
+  debug('Example app listening on port 3000');
 });
