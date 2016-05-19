@@ -8,11 +8,13 @@
   "description": "application that allows user to read Instagram feed based on group",
   "main": "app.js",
   "scripts": {
-    "test": "NODE_ENV=test ./node_modules/.bin/mocha --recursive --reporter spec"
+    "test": "NODE_ENV=test ./node_modules/.bin/mocha --recursive --reporter spec",
+    "start": "DEBUG=* node app.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.4.0",
     "chai": "^3.5.0",
     "express": "^4.13.4",
     "request": "^2.72.0"
@@ -32,11 +34,13 @@
     "gulp-minify-css": "^1.2.4",
     "gulp-sass": "^2.2.0",
     "jshint": "^2.9.2",
+    "lodash": "^4.12.0",
     "mocha": "^2.4.5",
     "mongoose": "^4.4.17",
     "passport": "^0.3.2",
     "passport-instagram": "^1.0.0",
     "request": "^2.72.0",
+    "request-promise": "^3.0.0",
     "url": "^0.11.0"
   }
 }

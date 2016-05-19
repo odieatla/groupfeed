@@ -1,7 +1,7 @@
 'use strict';
 var config = require('config');
 var url = require('url');
-var request = require('request');
+var request = require('request-promise');
 
 /**
  * sign in request to use: access_key or client_id/client_secret pair
@@ -9,11 +9,12 @@ var request = require('request');
  * @return instance with instagram api functions
  */
 exports.use = function ig_use(options) {
+  let ret = null;
   if (typeof options === 'object') {
-    var attrs = {};
+    let attrs = {};
     if (options.token_access) {
       attrs.auth = {
-        access_token: options.access_token
+        access_token: options.token_access
       };
 
       if (options.client_secret) {
@@ -27,13 +28,15 @@ exports.use = function ig_use(options) {
         client_secret: options.client_secret
       };
 
-      return new Instagram(attrs);
+      ret = new Instagram(attrs);
     } else {
       console.error('wrong params for use in instagram');
     }
   } else {
     console.error('options for use in instagram should be object');
   }
+
+  return ret;
 };
 
 
@@ -70,7 +73,6 @@ Instagram.prototype.get_auth_url = function(redirect_url, scope) {
  * @param code string received after redirected from get_auth_url
  * @param redirect_url string the redirected url that registered with Instagram API
  * @param cb function(err, response, body)
- * @return authentication_url string the url a user will use to log in and authorize the app
  */
 Instagram.prototype.auth_user = function(code, redirect_url, cb) {
   request.post({
@@ -82,20 +84,37 @@ Instagram.prototype.auth_user = function(code, redirect_url, cb) {
       redirect_uri: redirect_url,
       code: code
     }
-  }, (err, response, body) => {
+  })
+  .then((response, body) => {
     let body_obj = JSON.parse(body);
 
-    // TODO: error handling
-    if (err) {
-      console.error(err);
-      cb(err);
-    } else if (body && body_obj.access_token) {
-      console.error(body);
-      cb(null, response, body_obj);
+    if (body && body_obj.access_token) {
+      return new Promise((resolve, reject) => {
+        resolve(response, body_obj);
+      });
     } else {
-      console.error(body);
-      cb(err, response, body_obj);
+      return new Promise((resolve, reject) => {});
     }
-
+  })
+  .catch((err) => {
+    console.error(err);
   });
+};
+
+/**
+ * Get the list of users this user follows
+ * return the list of users this user follows
+ */
+Instagram.prototype.follows = function(token) {
+  let access_token = token ? token : this.attrs.auth.access_token;
+
+  let options = {
+    uri: `${config.get('instagram.urls.base')}users/self/follows`,
+    qs: {
+      access_token: token ? token : this.attrs.auth.access_token
+    },
+    json: true
+  };
+
+  return request(options);
 };

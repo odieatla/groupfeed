@@ -54,4 +54,25 @@ describe('User', () => {
       done();
     });
   });
+
+  it('should find user by instagram id', (done) => {
+    User.findByInstagramId(123)
+    .then((user) => {
+      expect(user).to.exist;
+    });
+
+    done();
+  });
+
+  it('should update user\'s full_name', (done) => {
+    User.findByInstagramId(123)
+    .then((user) => {
+      return user.updateFields({full_name: 'insta123'})
+    })
+    .then((ret) => {
+      expect(ret.full_name).to.be.equal('insta123');
+    });
+
+    done();
+  });
 });

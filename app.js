@@ -7,6 +7,7 @@ var passport = require('passport');
 var instagramStrategy = require('passport-instagram').Strategy;
 
 var debug = require('debug')('app');
+var _ = require('lodash');
 
 global.mongoose = require('mongoose');
 mongoose.connect(config.get('db.uri'), (err) => {
@@ -27,7 +28,7 @@ var User = require('./src/models/User');
 //   have a database of user records, the complete Instagram profile is
 //   serialized and deserialized.
 passport.serializeUser((user, done) => {
-  done(null, user);
+  done(null, {id: user.id, access_token: user.access_token});
 });
 
 passport.deserializeUser((obj, done) => {
@@ -40,35 +41,38 @@ passport.use(new instagramStrategy({
     callbackURL: config.get('instagram.urls.redirect')
   },
   (accessToken, refreshToken, profile, done) => {
+    // process.nextTick(cb) runs before any I/O events
     process.nextTick(() => {
-      User.find({'instagram_id': profile.id}, (err, results) => {
-        if (err) {
-          throw err;
-        }
-        if (!results.length) {
-          let user = {
-            instagram_id: profile.id,
-            username: profile.username,
-            access_token: accessToken,
-            first_name: profile.name.givenName || '',
-            last_name: profile.name.familyName || ''
-          };
-          User.create(user, (err, result) => {
-            if (err) {
-              throw err;
-            } else {
-              debug(`added user ${profile.username} to db`);
-            }
-          })
+      let data = profile._json.data;
+
+      User.findByInstagramId(data.id)
+      .then((result) => {
+        let user = {
+          instagram_id: data.id,
+          username: data.username,
+          access_token: accessToken,
+          full_name: data.full_name || ''
+        };
+
+        if (!result) {
+          return User.create(user);
         } else {
-          debug(`found user ${results[0].username}`);
+          return result.updateFields(user);
         }
+      })
+      .then((user) => {
+        if (user) {
+          debug(`added user ${user.username} to db`);
+        } else {
+          debug(`found user ${data.username}`);
+        }
+
+        profile.access_token = accessToken;
+        return done(null, profile);
+      })
+      .catch((err) => {
+        throw err;
       });
-      // To keep the example simple, the user's Instagram profile is returned to
-      // represent the logged-in user.  In a typical application, you would want
-      // to associate the Instagram account with a user record in your database,
-      // and return that user instead.
-      return done(null, profile);
     });
   }
 ));
@@ -78,45 +82,61 @@ function ensureAuthenticated(req, res, next) {
   res.redirect('/');
 }
 
+
 // middlewares
 app.use(require('cookie-parser')());
 app.use(require('body-parser').json());
 app.use(require('express-session')({ secret: 'groupfeed', resave: true, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
-app.use((err, req, res, next) => {
-  // handle `next(err)` calls
-  debug(`ERROR: ${err.message}`);
-  debug(err);
-});
+
 
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.get('/user', ensureAuthenticated, (req, res) => {
-  res.send('logged in');
+app.get('/user', ensureAuthenticated, (req, res, next) => {
+  User.findByInstagramId(req.session.passport.user.id)
+  .then((user) => {
+    if (user) {
+      let instagram_api = require('./src/server/instagram').use({token_access: user.access_token});
+      return instagram_api.follows();
+    } else {
+      throw new Error('no user found');
+    }
+  })
+  .then((body) => {
+    res.send(body);
+  })
+  .catch((err) => {
+    next(err);
+  });
 });
 
 // second and third leg of oauth
 app.get('/auth',
-  passport.authenticate('instagram', { failureRedirect: '/' }),
+  passport.authenticate('instagram', { failureRedirect: '/', successRedirect: '/user' }),
   (req, res, next) => {
-    res.redirect('/user');
 });
 
 // first leg of oauth
 app.get('/login',
   passport.authenticate('instagram',
-    {
-      failureRedirect: '/',
-      scope: ['comments', 'relationships']
-    }),
-  (err, req, res, next) => {
-    return next(err);
-  });
+  {
+    failureRedirect: '/',
+    scope: ['comments', 'relationships', 'follower_list']
+  }),
+  (req, res, next) => {
+  }
+);
 
+// error handling middleware must be behind all middlewares and routes calls
+app.use((err, req, res, next) => {
+  // handle `next(err)` calls
+  debug(`ERROR: ${err.message}`);
+  debug(err);
+});
 /**
  * api routes
  */

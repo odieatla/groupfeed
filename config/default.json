@@ -8,6 +8,7 @@
       "secret": "e5d4874e8b5d497fbea7f1aac36e3e72"
     },
     "urls": {
+      "base": "https://api.instagram.com/v1/",
       "authorize": "https://api.instagram.com/oauth/authorize/",
       "token": "https://api.instagram.com/oauth/access_token",
       "redirect": "http://54.186.160.181:3000/auth"
