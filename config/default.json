@@ -13,5 +13,10 @@
       "token": "https://api.instagram.com/oauth/access_token",
       "redirect": "http://54.186.160.181:3000/auth"
     }
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "ttl": 260
   }
 }

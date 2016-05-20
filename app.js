@@ -1,10 +1,14 @@
 "use strict"; // otherwise let, class.. cannot be used
 
 var express = require('express');
-var app = express();
+var redis = require('redis');
+var session = require('express-session');
+var redisStore = require('connect-redis')(session);
+var redisClient = redis.createClient();
 var config = require('config');
 var passport = require('passport');
 var instagramStrategy = require('passport-instagram').Strategy;
+var app = express();
 
 var debug = require('debug')('app');
 var _ = require('lodash');
@@ -86,7 +90,15 @@ function ensureAuthenticated(req, res, next) {
 // middlewares
 app.use(require('cookie-parser')());
 app.use(require('body-parser').json());
-app.use(require('express-session')({ secret: 'groupfeed', resave: true, saveUninitialized: true }));
+
+var redisStoreConfig = config.get('redis');
+redisStoreConfig.client = redisClient;
+app.use(session({
+  secret: 'groupfeed',
+  store: new redisStore(redisStoreConfig),
+  resave: false,
+  saveUninitialized: false
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
