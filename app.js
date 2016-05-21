@@ -102,10 +102,26 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// route middleware, cache pageviews
+app.use((req, res, next) => {
+  debug(`route ${req.path}`);
+
+  if (req.path) {
+    redisClient.incr(req.path, (err, reply) => {
+      if (err) {
+        next(err);
+      } else {
+        next();
+      }
+    });
+  } else {
+    next();
+  }
+});
 
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send('Hello World! And you probably haven\'t login yet.');
 });
 
 app.get('/user', ensureAuthenticated, (req, res, next) => {
@@ -128,9 +144,12 @@ app.get('/user', ensureAuthenticated, (req, res, next) => {
 
 // second and third leg of oauth
 app.get('/auth',
-  passport.authenticate('instagram', { failureRedirect: '/', successRedirect: '/user' }),
+  passport.authenticate('instagram', { failureRedirect: '/' }),
   (req, res, next) => {
-});
+    req.session.key = req.session.passport.user.id;
+    res.redirect('/user');
+  }
+);
 
 // first leg of oauth
 app.get('/login',
@@ -139,9 +158,21 @@ app.get('/login',
     failureRedirect: '/',
     scope: ['comments', 'relationships', 'follower_list']
   }),
-  (req, res, next) => {
+  (req, res) => {
+    // The request will be redirected to Instagram for authentication, so this
+    // function will not be called.
   }
 );
+
+app.get('/logout', (req, res, next) => {
+  req.session.destroy((err) => {
+    if(err) {
+      next(err);
+    } else {
+      res.redirect('/');
+    }
+  });
+});
 
 // error handling middleware must be behind all middlewares and routes calls
 app.use((err, req, res, next) => {
